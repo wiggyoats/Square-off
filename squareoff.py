@@ -64,9 +64,9 @@ import tempfile
 
 try:
     from bleak import BleakClient, BleakScanner
-except ImportError:  # pragma: no cover
+except ImportError as exc:  # pragma: no cover
     sys.exit(
-        "The 'bleak' package is required. Install it with:\n"
+        f"Could not import bleak ({exc}). If it isn't installed:\n"
         "    pip install bleak"
     )
 

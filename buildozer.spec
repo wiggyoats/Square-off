@@ -28,7 +28,9 @@ version = 1.0
 # The pinned p4a's flask recipe is Flask 2.0.3 but leaves its dependencies
 # unpinned, so pip pulls Werkzeug 3.x, which dropped url_quote and makes
 # `import flask` crash on launch. Pin the Flask 2.0-era versions.
-requirements = python3,flask,werkzeug==2.0.3,jinja2==3.0.3,itsdangerous==2.0.1,click==8.0.4,markupsafe==2.1.5,bleak,pyjnius,android,chess,requests,urllib3,idna,chardet,certifi,openssl
+# typing_extensions: bleak needs it below Python 3.12, and its p4a recipe
+# doesn't pull it in.
+requirements = python3,flask,werkzeug==2.0.3,jinja2==3.0.3,itsdangerous==2.0.1,click==8.0.4,markupsafe==2.1.5,bleak,typing_extensions,pyjnius,android,chess,requests,urllib3,idna,chardet,certifi,openssl
 
 # --- Bootstrap: run the Flask server, show it in a native WebView ----------
 p4a.bootstrap = webview
