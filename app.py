@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import os
 import threading
+import time
 from collections import deque
 
 import chess
@@ -50,6 +51,8 @@ class BoardController:
         self.last_occupancy = None
         self.flipped = False               # 180° board orientation (colours swapped)
         self.status_listeners = []  # list of callables(text)
+        self.calibration_warning = None    # last calibration error code, if any
+        self.recalibrating = False         # waiting for a power-cycled board
 
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
@@ -87,6 +90,7 @@ class BoardController:
         b = SquareOff(address)
         b.status_callback = self._on_status
         b.occupancy_callback = self._on_occupancy
+        b.calibration_callback = self._on_calibration_error
         b.flipped = self.flipped
         self.run(b.connect(), 40)
         try:
@@ -103,6 +107,57 @@ class BoardController:
             finally:
                 self.board = None
                 self.address = None
+
+    def recalibrate(self):
+        """Wait for the user to power-cycle the board, then reconnect.
+
+        The SWAP has no remote reboot/calibrate command (checked against the
+        official app); it homes its motor only while powering up. We stay
+        connected so that switching the board off shows up as the link dropping
+        (scanning can't tell: BlueZ keeps reporting the cached device), then keep
+        trying to reconnect until it is back on. Runs in a background thread
+        with no time limit, since the user may not get to the board straight
+        away; cancel_recalibrate() stops it.
+        """
+        address = self.address
+        if not address or self.recalibrating or not self.connected:
+            return
+        self.recalibrating = True
+
+        def _wait_and_reconnect():
+            try:
+                # 1) Wait for the board to be switched off (the link drops).
+                while self.recalibrating and self.connected:
+                    time.sleep(1)
+                if not self.recalibrating:
+                    print("[app] recalibration cancelled")
+                    return
+                print("[app] board switched off - waiting for it to come back")
+                self.board = None
+                # 2) Keep trying to reconnect; this succeeds once it is back on
+                #    (it homes while starting up).
+                time.sleep(3)
+                while self.recalibrating:
+                    try:
+                        self.connect(address)
+                        if self.connected:
+                            self.calibration_warning = None
+                            print("[app] board back after recalibration")
+                            return
+                    except Exception as exc:  # noqa: BLE001
+                        print(f"[app] board not back yet ({exc})")
+                    time.sleep(3)
+                print("[app] recalibration cancelled")
+            finally:
+                self.recalibrating = False
+
+        threading.Thread(target=_wait_and_reconnect, daemon=True).start()
+
+    def cancel_recalibrate(self):
+        self.recalibrating = False
+
+    def _on_calibration_error(self, code):
+        self.calibration_warning = code
 
     @property
     def connected(self):
@@ -130,6 +185,10 @@ class BoardController:
                 if a[0] == "note":
                     notes.append(a[1])
             return notes
+        if any(a[0] != "note" for a in actions):
+            # The board goes idle after a while and silently ignores paths until
+            # it is handshaken again, so wake it before every batch of motions.
+            self.run(self.board.handshake(), timeout=15)
         for a in actions:
             kind = a[0]
             if kind == "move":
@@ -420,10 +479,15 @@ class GameManager:
             except Exception as exc:  # noqa: BLE001
                 exec_notes = []
                 self._say(f"[board error] {exc}")
+                failed = True
+            else:
+                failed = False
             finally:
                 self.busy = False
             if self.ctrl.board is None:
                 self._say("(Not connected — showing the puzzle only.)")
+            elif failed:
+                self._say("Setup stopped part-way — the board may not match the puzzle.")
             else:
                 self._say("Position set up. Make the best move on the board.")
             for n in notes + exec_notes:
@@ -573,6 +637,9 @@ class GameManager:
             except Exception as exc:  # noqa: BLE001
                 exec_notes = []
                 self._say(f"[board error] {exc}")
+                failed = True
+            else:
+                failed = False
             finally:
                 self.busy = False
             # Logical + physical bookkeeping back to a clean slate.
@@ -588,7 +655,11 @@ class GameManager:
                 self.ctrl.board._parked_slots = set()
             self.detector.reset()
             self.active = False
-            self._say("Board reset to the starting position.")
+            if failed:
+                self._say("Reset stopped part-way — finish setting up the "
+                          "starting position by hand.")
+            else:
+                self._say("Board reset to the starting position.")
             for n in notes + exec_notes:
                 self._say(n)
         self._notify_update()
@@ -640,6 +711,8 @@ class GameManager:
                                     if self.mode == "puzzle" and self.solution else None),
                 "messages": list(self.messages)[-14:],
                 "last_status": self.ctrl.last_status,
+                "calibration_warning": self.ctrl.calibration_warning,
+                "recalibrating": self.ctrl.recalibrating,
                 "error": error,
             }
 
@@ -693,6 +766,18 @@ def api_connect():
 @app.route("/api/disconnect", methods=["POST"])
 def api_disconnect():
     controller.disconnect()
+    return jsonify(game.state())
+
+
+@app.route("/api/recalibrate", methods=["POST"])
+def api_recalibrate():
+    controller.recalibrate()
+    return jsonify(game.state())
+
+
+@app.route("/api/recalibrate/cancel", methods=["POST"])
+def api_recalibrate_cancel():
+    controller.cancel_recalibrate()
     return jsonify(game.state())
 
 

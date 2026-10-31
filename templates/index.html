@@ -62,7 +62,9 @@
     <div class="row">
       <button id="connectBtn">Connect</button>
       <button id="disconnectBtn" class="secondary">Disconnect</button>
+      <button id="recalBtn" class="secondary" title="Power-cycle the board so it re-homes its motor">Recalibrate</button>
     </div>
+    <div id="calibNote" class="muted" style="display:none;color:var(--warn)"></div>
 
     <h3 style="margin-top:18px">New game</h3>
     <div class="row">
@@ -185,6 +187,17 @@ function applyState(st) {
 
   $('#connPill').attr('class', 'pill ' + (st.connected ? 'on' : 'off'))
                 .text(st.connected ? ('connected' + (st.address ? ' · ' + st.address : '')) : 'disconnected');
+  if (st.recalibrating) {
+    $('#calibNote').show().text('Switch the board OFF, wait 5 seconds, then switch it back ON. ' +
+                                'It re-homes while starting up; this page reconnects automatically.');
+  } else if (st.calibration_warning) {
+    $('#calibNote').show().text('The board reports a calibration problem (code ' + st.calibration_warning +
+                                '). Press Recalibrate.');
+  } else {
+    $('#calibNote').hide();
+  }
+  $('#recalBtn').prop('disabled', !st.recalibrating && !st.connected)
+    .text(st.recalibrating ? 'Cancel recalibrate' : 'Recalibrate');
   $('#engineTag').text(st.engine ? ('engine: ' + st.engine) : '');
   $('#flipBtn').css('background', st.flipped ? 'var(--warn)' : '')
                .css('color', st.flipped ? '#0b1020' : '')
@@ -240,6 +253,10 @@ $('#connectBtn').on('click', function() {
 });
 
 $('#disconnectBtn').on('click', () => api('/api/disconnect').then(applyState));
+$('#recalBtn').on('click', function () {
+  const url = $(this).text() === 'Recalibrate' ? '/api/recalibrate' : '/api/recalibrate/cancel';
+  api(url).then(applyState);
+});
 
 $('#modeSel').on('change', function() {
   const lichess = $(this).val() === 'lichess';

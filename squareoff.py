@@ -174,6 +174,16 @@ _CHAR_NAMES.update({
 MAX_WRITE_CHUNK = 20
 
 
+# Error codes the board sends on the NUS channel ('0#26*' etc.) when it detects
+# that its motor calibration is off. The official app answers these with a
+# "calibrate the board" prompt; the SWAP only recalibrates (homes) at power-on.
+CALIBRATION_ERROR_CODES = {"26", "27", "28"}
+
+
+class BoardNotResponding(Exception):
+    """The board accepted a motion path but never reported it finished."""
+
+
 def build_message(command_id: int, data: str = "") -> bytes:
     """Build a protocol message of the form '<commandId>#<data>*'."""
     return f"{command_id}#{data}*".encode("ascii")
@@ -446,6 +456,8 @@ class SquareOff:
         #   occupancy_callback(str64)  -> 64-char occupancy string (on change)
         self.status_callback = None
         self.occupancy_callback = None
+        #   calibration_callback(code) -> board reported a calibration error
+        self.calibration_callback = None
         # Board orientation. When True, every coordinate is rotated 180°
         # ((x,y) -> (7-x, 7-y)) so you can play with the board turned around
         # (colours swapped). This also maps the right parking bank onto the
@@ -539,6 +551,17 @@ class SquareOff:
 
         if command_id == "14":
             print(f"[board] handshake -> {payload}")
+        elif command_id == "0" and payload.isdigit():
+            # Numeric '0#NN' messages are board error codes, not piece events.
+            if payload in CALIBRATION_ERROR_CODES:
+                print(f"[board] calibration error {payload} - power-cycle the board")
+                if self.calibration_callback:
+                    try:
+                        self.calibration_callback(payload)
+                    except Exception as exc:  # noqa: BLE001
+                        print(f"[!] calibration_callback error: {exc}")
+            else:
+                print(f"[board] error code {payload}")
         elif command_id == "0":
             # piece up/down: <square><u|d>
             square, action = payload[:-1], payload[-1:]
@@ -676,6 +699,13 @@ class SquareOff:
             if got_ack:
                 # 'OK' == motor finished; brief settle so the magnet releases.
                 await asyncio.sleep(self.post_move_settle)
+            elif self._move_ack is not None:
+                # We were listening and the board never confirmed: it has most
+                # likely gone idle and ignored the path. Carrying on would leave
+                # the logical board out of step with the real one, so stop here.
+                raise BoardNotResponding(
+                    "The board didn't confirm a move - it may have gone idle or "
+                    "be low on battery. Check the pieces, then try again.")
             else:
                 # No completion signal: pace by estimated travel time instead.
                 remaining = self._estimate_move_time(path) - (loop.time() - start)
