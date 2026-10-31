@@ -25,7 +25,10 @@ version = 1.0
 # requests(+deps)/openssl -> chess.com daily-puzzle fetch over HTTPS
 #   NB: use chardet (pure-Python) rather than charset-normalizer, whose 3.x
 #   builds a C speedup extension that fails when cross-compiling for Android.
-requirements = python3,flask,bleak,pyjnius,android,chess,requests,urllib3,idna,chardet,certifi,openssl
+# The pinned p4a's flask recipe is Flask 2.0.3 but leaves its dependencies
+# unpinned, so pip pulls Werkzeug 3.x, which dropped url_quote and makes
+# `import flask` crash on launch. Pin the Flask 2.0-era versions.
+requirements = python3,flask,werkzeug==2.0.3,jinja2==3.0.3,itsdangerous==2.0.1,click==8.0.4,markupsafe==2.1.5,bleak,pyjnius,android,chess,requests,urllib3,idna,chardet,certifi,openssl
 
 # --- Bootstrap: run the Flask server, show it in a native WebView ----------
 p4a.bootstrap = webview
@@ -51,12 +54,10 @@ fullscreen = 0
 # INTERNET is needed so the WebView can talk to the local Flask server.
 android.permissions = INTERNET, BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_SCAN, BLUETOOTH_CONNECT, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
 
-# targetSdkVersion (Java/manifest side). Newer Android versions pop up a
-# "this app was built for an older version of Android" warning when this is low,
-# so target a recent API. This is independent of the NDK platform used to build
-# the native CPython (that is driven by android.ndk_api / android.minapi below),
-# so it does not require a newer NDK than the pinned p4a ships.
-android.api = 34
+# targetSdkVersion. Keep this at 33: the webview bootstrap's ndk-build also
+# uses it as APP_PLATFORM, and the pinned p4a's NDK r25b rejects anything above
+# android-33 ("above the maximum supported version"), so 34 breaks the build.
+android.api = 33
 # NDK build platform: NDK r25b (shipped by the pinned p4a) supports up to
 # android-33 for *native* compilation, so keep the native target at 24 (min).
 android.ndk_api = 24
