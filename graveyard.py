@@ -1,22 +1,19 @@
-"""Colour-aware parking bank for captured pieces.
+"""Type- and colour-aware parking bank for captured pieces.
 
-Confirmed on hardware: there are two parking banks just off the board edges.
+Confirmed on hardware: there are two mirrored parking banks just off the board
+edges, with slots labelled by piece type.
 
   Right bank : x=8 (inner), x=9 (outer)
   Left  bank : x=-1 (inner), x=-2 (outer)
 
-Each player parks the pieces they capture on the bank to THEIR right, so captures
-group by colour (black -> right bank, white -> left bank; set by `black_bank`).
-Within a bank pieces are stacked sequentially in capture order: inner column
-first, filling low-to-high from that player's own side (ranks ascend on the right
-bank near the white player, descend on the left bank near the black player). The
-motor (alloc) and hand captures (alloc_human) use this same layout so they agree.
+On the right bank the rank (y) is fixed per piece type on both columns:
+  pawns  y=0,1,2,3   knight y=4   bishop y=5   rook y=6   queen y=7
+  (two queen slots per bank -> one is the spare for a promotion).
+The left bank is its 180-degree mirror (y -> 7-y), see slots_for().
 
-Retrieval matches by piece type+colour (see Graveyard.take), so the exact slot a
-piece sits in only needs to be consistent, which it is.
-
-`slots_for()` / `_TYPE_RANKS` below describe an older type-segregated pocket
-layout; they're kept for reference but are no longer used by allocation.
+Captures group by colour (black -> right bank, white -> left bank; set by
+`black_bank`). Both the motor (alloc) and hand captures (alloc_human) put a piece
+in the labelled slot for its type, so they agree with each other and the board.
 """
 
 from __future__ import annotations
@@ -66,38 +63,34 @@ class Graveyard:
         self.occupied = {}            # (sx, sy) -> chess.Piece
 
     def alloc(self, piece: chess.Piece):
-        """Reserve and return a free slot (sx, sy) for `piece`.
+        """Reserve and return a free labelled slot (sx, sy) for `piece`.
 
-        Uses the same sequential stacking layout as hand captures (bank chosen by
-        colour, filled leftmost/low-to-high) so the motor and the human park
-        pieces identically on the same side.
+        Uses the slots labelled for the piece's type on its colour's bank. If
+        those are all full (e.g. a third knight after a promotion), falls back to
+        any free slot on the same bank rather than stacking two pieces in one.
         """
-        for slot in self._human_fill_order(piece.color):
+        typed = slots_for(piece, self.black_bank)
+        for slot in typed + self._bank_slots(piece.color):
             if slot not in self.occupied:
                 self.occupied[slot] = piece
                 return slot
-        # Overflow (e.g. a third same-type piece) - reuse the last valid slot.
-        slot = self._human_fill_order(piece.color)[-1]
+        # Bank completely full - reuse the last labelled slot.
+        slot = typed[-1]
         self.occupied[slot] = piece
         return slot
 
     def alloc_human(self, piece: chess.Piece):
         """Slot we ASSUME a human used when taking `piece` off by hand.
 
-        Identical to alloc(): each player stacks captures on the bank to their
-        right (black -> right bank, white -> left bank), filling leftmost/low-to-
-        high. Kept as a named method so call sites read clearly.
+        Identical to alloc(): the human drops the piece in the slot labelled for
+        its type. Kept as a named method so call sites read clearly.
         """
         return self.alloc(piece)
 
-    def _human_fill_order(self, color: bool):
-        """Slots for `color`'s captures in the order a human would stack them."""
-        cols = bank_columns(color, self.black_bank)   # black->right, white->left
-        # Ranks ascend on the right bank (near the white player at rank 1) and
-        # descend on the left bank (near the black player at rank 8) so each
-        # player fills "low to high" from where they sit.
-        ranks = range(8) if cols[0] > 0 else range(7, -1, -1)
-        return [(c, y) for c in cols for y in ranks]
+    def _bank_slots(self, color: bool):
+        """Every slot on `color`'s bank, inner column first."""
+        cols = bank_columns(color, self.black_bank)
+        return [(c, y) for c in cols for y in range(8)]
 
     def free(self, slot):
         self.occupied.pop(slot, None)

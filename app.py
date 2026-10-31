@@ -283,7 +283,7 @@ class GameManager:
         """Remember where a hand-captured piece was parked, so reset can fetch it.
 
         We assume the human drops the piece on the bank to their right, filling
-        the next free spot (pawns low-to-high) - see Graveyard.alloc_human. Call
+        the slot labelled for its type - see Graveyard.alloc_human. Call
         this BEFORE pushing `move` (the victim must still be on the board).
         """
         victim = self._captured_piece(move)
