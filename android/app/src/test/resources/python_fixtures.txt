@@ -1,0 +1,23 @@
+move e7 e6 4,6:4,5|
+move g8 f6 6,7:5.5,6.5:5.5,5.5:5,5|
+move b1 c3 1,0:1.5,0.5:1.5,1.5:2,2|
+move g1 h3 6,0:6.5,0.5:6.5,1.5:7,2|
+move e2 e4 4,1:4,3|
+move a1 h8 0,0:7,7|
+park e4 8 0 4,3:4,3.5:7.5,3.5:7.5,0:8,0|
+retrieve e4 8 0 8,0:7.5,0:7.5,3.5:4,3.5:4,3|
+park h8 9 7 7,7:7,6.5:8.5,6.5:8.5,7:9,7|
+retrieve h8 9 7 9,7:8.5,7:8.5,6.5:7,6.5:7,7|
+park a1 -1 7 0,0:0,0.5:-0.5,0.5:-0.5,7:-1,7|
+retrieve a1 -1 7 -1,7:-0.5,7:-0.5,0.5:0,0.5:0,0|
+park d5 -2 3 3,4:3,4.5:-1.5,4.5:-1.5,3:-2,3|
+retrieve d5 -2 3 -2,3:-1.5,3:-1.5,4.5:3,4.5:3,4|
+route e2 e5 4,1:4.5,1:4.5,4:4,4|
+route a1 h1 0,0:0,0.5:7,0.5:7,0|
+route c3 f6 2,2:2.5,2.5:4.5,2.5:4.5,4.5:5,5|
+route h8 a1 7,7:6.5,6.5:0.5,6.5:0.5,0.5:0,0|
+route h2 h7 7,1:6.5,1:6.5,6:7,6|
+arrange 6k1/pb2rqp1/3p3p/2p3r1/2P5/3N1B2/P1Q2PPP/1R2R2K b - - 0 21|park:g8:8,4 park:f8:8,5 park:b8:9,4 park:f7:8,0 park:c7:8,1 park:b7:8,2 park:d2:-1,7 park:c2:-1,6 park:b2:-1,5 park:g1:-1,3 park:c1:-1,2 route:e8:g8 route:d8:f7 route:d1:c2 route:a8:g5 route:c8:b7 route:f1:f3 route:b1:d3 route:h7:h6 route:e7:d6 route:d7:c5 route:e2:c4 route:h8:e7 route:a1:b1 park:e1:-1,0 route:h1:e1 retrieve:-1,0:h1|11
+reset 6k1/pb2rqp1/3p3p/2p3r1/2P5/3N1B2/P1Q2PPP/1R2R2K b - - 0 21|route:g8:e8 route:f7:d8 route:c2:d1 route:e7:h8 route:g5:a8 route:b1:a1 route:b7:f8 route:f3:f1 route:d3:g1 route:h6:h7 route:d6:f7 route:c5:e7 route:c4:e2 park:h1:-1,0 route:e1:h1 retrieve:-1,0:e1 retrieve:8,4:g8 retrieve:8,5:c8 retrieve:9,4:b8 retrieve:8,0:d7 retrieve:8,1:c7 retrieve:8,2:b7 retrieve:-1,7:d2 retrieve:-1,6:c2 retrieve:-1,5:b2 retrieve:-1,2:c1 retrieve:-1,3:b1|0
+arrange r1b1r3/1p2b1Qp/p2pkn2/5N2/2q1PP2/2N5/PPP3PP/2KR3R w - - 0 1|park:b8:8,4 park:g7:8,0 park:f7:8,1 park:d7:8,2 park:c7:8,3 park:d2:-1,7 park:f1:-1,2 park:c1:-2,2 route:e8:e6 route:e1:c1 route:d1:g7 route:d8:c4 route:h8:e8 route:a1:d1 route:g8:f6 route:g1:f5 route:b1:c3 route:e7:d6 route:a7:a6 route:f2:f4 route:e2:e4 route:f8:e7|8
+reset r1b1r3/1p2b1Qp/p2pkn2/5N2/2q1PP2/2N5/PPP3PP/2KR3R w - - 0 1|route:c1:e1 route:c4:d8 route:e8:h8 route:d1:a1 route:e7:f8 route:f6:g8 route:f5:g1 route:c3:b1 route:a6:f7 route:f4:f2 route:e4:e2 route:e6:e8 route:g7:d1 route:d6:g7 retrieve:8,4:b8 retrieve:8,0:e7 retrieve:8,1:d7 retrieve:8,2:c7 retrieve:8,3:a7 retrieve:-1,7:d2 retrieve:-1,2:f1 retrieve:-2,2:c1|0

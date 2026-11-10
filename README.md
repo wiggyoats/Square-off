@@ -31,17 +31,18 @@ handled.
 
 ## Android app (APK)
 
-You can install this on an Android phone as a native app (Flask UI in a WebView,
-real Bluetooth via `bleak`'s Android backend). See **[ANDROID_BUILD.md](ANDROID_BUILD.md)**
-for the full Buildozer build steps. In short:
+A native Android app lives in [`android/`](android/) (Kotlin + Jetpack Compose,
+talking to the board directly over Android Bluetooth). It does everything the
+web UI does: connect and recalibrate, play the built-in bot or the Lichess AI,
+chess.com puzzles, and reset the board. Build it with:
 
 ```bash
-pip install "buildozer==1.5.0" "cython<3.0"
-buildozer android debug          # produces bin/squareoff-*.apk
+cd android
+./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
+./gradlew testDebugUnitTest    # path/planner tests against the Python version
 ```
 
-> Termux / a plain web host won't work for the board itself — normal (non-rooted)
-> Android has no BlueZ, so BLE only works through a python-for-android build.
+Needs JDK 17 and the Android SDK (set `sdk.dir` in `android/local.properties`).
 
 ## Command line (same features, no browser)
 

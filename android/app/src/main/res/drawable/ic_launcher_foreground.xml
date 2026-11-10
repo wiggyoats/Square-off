@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- A simple knight silhouette. -->
+    <path android:fillColor="#222222" android:strokeColor="#FFFFFF" android:strokeWidth="2"
+        android:pathData="M40,78 L68,78 L68,72 L64,70 C64,60 66,52 70,46 C74,40 72,32 64,30 L58,28 L56,24 L52,30 C44,32 38,40 36,48 L34,54 C33,58 37,60 40,58 L46,54 L50,54 C48,60 44,64 42,70 L40,72 Z" />
+</vector>
