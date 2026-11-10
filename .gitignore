@@ -7,11 +7,6 @@ __pycache__/
 venv/
 env/
 
-# --- Buildozer / python-for-android build artifacts ---
-.buildozer/
-bin/
-p4a-recipes/
-
 # --- Redundant source archive ---
 Square-off.zip
 
